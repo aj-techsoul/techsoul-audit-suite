@@ -1,0 +1,87 @@
+name: Build Windows Installer
+
+on:
+  push:
+    tags: ['v*']          # Trigger on version tags: git tag v1.0.0 && git push --tags
+  workflow_dispatch:      # Or trigger manually from GitHub UI
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+
+    steps:
+      # ── Checkout ──────────────────────────────────────────────
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # ── Python setup ──────────────────────────────────────────
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Python dependencies
+        working-directory: backend
+        run: |
+          pip install pyinstaller
+          pip install fastapi "uvicorn[standard]" reportlab google-generativeai httpx aiofiles python-multipart
+
+      # ── PyInstaller: Bundle backend → .exe ───────────────────
+      - name: Bundle backend with PyInstaller
+        working-directory: backend
+        run: |
+          pyinstaller audit_server.spec --distpath ../electron-app/backend-dist --clean -y
+
+      # ── Node.js setup ─────────────────────────────────────────
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "18"
+
+      # ── Build Next.js frontend ────────────────────────────────
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Build Next.js
+        working-directory: frontend
+        run: npm run build
+
+      # ── Electron-builder: Create Windows installer ────────────
+      - name: Install Electron dependencies
+        working-directory: electron-app
+        run: npm ci
+
+      - name: Build Windows installer
+        working-directory: electron-app
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npx electron-builder --win --x64
+
+      # ── Upload artifact ───────────────────────────────────────
+      - name: Upload installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: TechSoul-Audit-Suite-Windows
+          path: dist/*.exe
+          retention-days: 30
+
+      # ── Create GitHub Release (on tag push) ──────────────────
+      - name: Create Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v1
+        with:
+          files: dist/*.exe
+          name: "TechSoul Audit Suite ${{ github.ref_name }}"
+          body: |
+            ## TechSoul Audit Suite — Windows Installer
+
+            ### Installation
+            1. Download `TechSoul Audit Suite Setup.exe`
+            2. Run the installer (click Next → Install)
+            3. Launch from Desktop shortcut or Start Menu
+            4. Enter your Gemini API key in Settings on first run
+
+            ### Requirements
+            - Windows 10 or later (64-bit)
+            - Internet connection for AI analysis

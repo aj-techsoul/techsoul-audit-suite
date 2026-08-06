@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      width: 520px;
+      height: 320px;
+      background: linear-gradient(135deg, #060C1F 0%, #0C1A38 60%, #0D2666 100%);
+      border-radius: 16px;
+      overflow: hidden;
+      font-family: -apple-system, 'Segoe UI', sans-serif;
+      color: #ffffff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0;
+      position: relative;
+    }
+
+    /* Top accent bar */
+    body::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, #1B4FE4 0%, #00D4FF 100%);
+    }
+
+    /* Dot grid background */
+    .dots {
+      position: absolute;
+      inset: 0;
+      opacity: 0.08;
+      background-image: radial-gradient(circle, #fff 1px, transparent 1px);
+      background-size: 24px 24px;
+    }
+
+    .content {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+    }
+
+    /* Logo area */
+    .logo-wrap {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .logo-wrap img {
+      height: 36px;
+      filter: brightness(0) invert(1);
+    }
+
+    /* Progress bar */
+    .progress-track {
+      width: 280px;
+      height: 4px;
+      background: rgba(255,255,255,0.12);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+    .progress-bar {
+      height: 100%;
+      background: linear-gradient(90deg, #1B4FE4, #00D4FF);
+      border-radius: 2px;
+      animation: fill 3.5s ease-in-out forwards;
+    }
+    @keyframes fill {
+      0%   { width: 0%; }
+      60%  { width: 75%; }
+      90%  { width: 90%; }
+      100% { width: 100%; }
+    }
+
+    /* Status text */
+    .status {
+      font-size: 11px;
+      color: rgba(255,255,255,0.45);
+      letter-spacing: 0.08em;
+      animation: blink 1.4s ease-in-out infinite;
+    }
+    @keyframes blink {
+      0%, 100% { opacity: 0.45; }
+      50%       { opacity: 0.9; }
+    }
+
+    .tagline {
+      font-size: 13px;
+      color: rgba(255,255,255,0.6);
+      margin-top: -8px;
+    }
+
+    .version {
+      position: absolute;
+      bottom: 14px;
+      font-size: 10px;
+      color: rgba(255,255,255,0.25);
+    }
+  </style>
+</head>
+<body>
+  <div class="dots"></div>
+
+  <div class="content">
+    <div class="logo-wrap">
+      <!-- Falls back to text if image not available -->
+      <img src="assets/logo-white.png" onerror="this.style.display='none'" />
+      <span style="font-size:22px;font-weight:700;letter-spacing:0.04em">TECHSOUL</span>
+    </div>
+
+    <div class="tagline">AI Website Audit Suite</div>
+
+    <div class="progress-track">
+      <div class="progress-bar"></div>
+    </div>
+
+    <div class="status" id="status">Starting backend services…</div>
+  </div>
+
+  <div class="version">v1.0.0 · techsoul.in</div>
+
+  <script>
+    const messages = [
+      "Starting backend services…",
+      "Loading audit engine…",
+      "Initialising PDF renderer…",
+      "Almost ready…",
+    ];
+    let i = 0;
+    setInterval(() => {
+      i = (i + 1) % messages.length;
+      document.getElementById("status").textContent = messages[i];
+    }, 900);
+  </script>
+</body>
+</html>

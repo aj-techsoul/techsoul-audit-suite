@@ -1,0 +1,18 @@
+Audit *[website URL]* and create a client-facing "revamp sales" PDF report branded with my logo (attached: [logo filename]), website https://techsoul.in .
+
+If you can't fetch the live site content, ask me for screenshots of the key pages instead of guessing.
+
+Structure the PDF as:
+
+Cover page with logo, site name, and a stats strip
+Executive summary with a Good/Bad/Ugly verdict snapshot
+"The Good" table (what to keep)
+"The Bad" table (what's missing but not broken)
+"The Ugly" table (actual bugs/broken elements)
+Visual evidence page with cropped screenshots proving the worst issues
+A "Current Site vs. After Revamp" checklist page using red ✗ / green ✓ icons
+An issue-matrix page (issue type × page) using the same ✗/✓ icons
+A "cost of waiting" / urgency page tied to what matters most for this client's industry
+A final CTA page with a 3-phase recommended scope
+
+Put my website URL in the footer of every page. Ground every finding in what's actually visible in the screenshots — don't invent issues. Render each page to an image afterward and visually check it before sending me the file.
