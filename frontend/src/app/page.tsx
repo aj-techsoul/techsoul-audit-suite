@@ -484,7 +484,12 @@ export default function Home() {
                   <Mail className="w-3.5 h-3.5 inline mr-1" /> Outreach Email
                 </button>
                 <a
-                  href={`${API}${report.pdf_url}`}
+                  href={(() => {
+                    const pdfPath = report?.download_url || report?.pdf_url || report?.report_url || "";
+                    if (!pdfPath) return "#";
+                    if (pdfPath.startsWith("http")) return pdfPath;
+                    return `${API}${pdfPath.startsWith("/") ? "" : "/"}${pdfPath}`;
+                  })()}
                   target="_blank"
                   rel="noreferrer"
                   className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-lg shadow-emerald-500/20"

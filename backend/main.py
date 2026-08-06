@@ -32,8 +32,11 @@ app.add_middleware(
 )
 
 STATIC_DIR = os.path.join(os.path.dirname(__file__), "static")
+NEXT_ASSETS = os.path.join(STATIC_DIR, "_next")
+if os.path.exists(NEXT_ASSETS):
+    app.mount("/_next", StaticFiles(directory=NEXT_ASSETS), name="next_assets")
 if os.path.exists(STATIC_DIR):
-    app.mount("/app", StaticFiles(directory=STATIC_DIR, html=True), name="static")
+    app.mount("/static", StaticFiles(directory=STATIC_DIR, html=True), name="static")
 
 REPORTS_DIR = os.path.join(os.path.dirname(__file__), "reports")
 os.makedirs(REPORTS_DIR, exist_ok=True)
@@ -123,6 +126,7 @@ async def create_audit(req: AuditRequest):
             "url": req.url,
             "client_name": req.client_name,
             "download_url": f"/api/reports/{pdf_filename}",
+            "pdf_url": f"/api/reports/{pdf_filename}",
             "audit_data": audit_json,
             "company_settings": db_settings
         }
