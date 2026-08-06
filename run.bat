@@ -10,8 +10,6 @@ echo.
 
 :: 1. Navigate to script folder
 cd /d "%~dp0"
-echo Current directory: %CD%
-echo.
 
 :: 2. Find Python executable
 set "PY_CMD="
@@ -25,7 +23,7 @@ if %errorlevel% equ 0 (
     )
 )
 
-if "%PY_CMD%"=="" (
+if "%PY_CMD%"==" " (
     echo [ERROR] Python was not found on your system.
     echo Please install Python 3.10+ from https://www.python.org/
     echo ** IMPORTANT ** Check the box "Add Python to environment variables" during setup.
@@ -97,20 +95,25 @@ start "TechSoul-Frontend" cmd /k "cd /d "%~dp0frontend" && call npm run dev"
 
 echo.
 echo Waiting 5 seconds for servers to start...
-timeout /t 5
+timeout /t 5 >nul
 
 echo.
-echo Opening browser at http://localhost:3000...
+echo ========================================================
+echo.
+echo    SUCCESS! APP IS LIVE AT:
+echo.
+echo    >>>>  http://localhost:3000  <<<<
+echo    >>>>  http://127.0.0.1:3000  <<<<
+echo.
+echo    Backend API: http://localhost:8000
+echo.
+echo ========================================================
+echo.
+echo Opening browser automatically...
 start http://localhost:3000
 
 echo.
-echo ========================================================
-echo  [SUCCESS] TechSoul Audit Suite is running!
-echo  Backend:  http://localhost:8000
-echo  Frontend: http://localhost:3000
-echo.
-echo  Keep this console window open while using the app.
-echo  To stop the app, close this window or run stop.bat.
-echo ========================================================
+echo Keep this console window open while using the application.
+echo To stop all servers when done, double-click stop.bat.
 echo.
 pause
