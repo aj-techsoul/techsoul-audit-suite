@@ -7,10 +7,11 @@ import {
   XCircle, AlertTriangle, Layers, ShieldAlert, Search,
   ExternalLink, Settings, Save, Mail, TrendingDown,
   ChevronDown, ChevronUp, Copy, Check, RefreshCw,
-  BarChart3, Zap, DollarSign, Target, Send, Eye, EyeOff
+  BarChart3, Zap, DollarSign, Target, Send, Eye, EyeOff,
+  Lock, Unlock, KeyRound, ShieldCheck
 } from "lucide-react";
 
-const API = "http://localhost:8000";
+const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 const TONES = [
   { value: "Aggressive & Urgent", label: "🔥 Aggressive & Urgent", desc: "High-pressure, compelling action" },
@@ -35,6 +36,13 @@ export default function Home() {
   const [settingsSaved, setSettingsSaved] = useState(false);
   const [expandedSection, setExpandedSection] = useState<string | null>("losses");
 
+  // Passcode Auth State
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  const [passcodeInput, setPasscodeInput] = useState("");
+  const [passcodeError, setPasscodeError] = useState("");
+  const [passcodeLoading, setPasscodeLoading] = useState(false);
+  const [showPasscodeText, setShowPasscodeText] = useState(false);
+
   // Settings state
   const [settings, setSettings] = useState({
     user_name: "AJ",
@@ -46,14 +54,57 @@ export default function Home() {
     phone: "+919862542983",
     linkedin: "",
     gemini_api_key: "",
+    passcode: "123456",
   });
   const [showApiKey, setShowApiKey] = useState(false);
 
   useEffect(() => {
+    // Check if session token exists
+    const storedAuth = localStorage.getItem("techsoul_auth");
+    if (storedAuth === "true") {
+      setIsAuthenticated(true);
+    }
+
     axios.get(`${API}/api/settings`).then((res) => {
       if (res.data) setSettings((s) => ({ ...s, ...res.data }));
     }).catch(() => {});
   }, []);
+
+  const handleVerifyPasscode = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!passcodeInput.trim()) return;
+    setPasscodeLoading(true);
+    setPasscodeError("");
+
+    try {
+      const res = await axios.post(`${API}/api/verify-passcode`, {
+        passcode: passcodeInput.trim(),
+      });
+      if (res.data?.success) {
+        setIsAuthenticated(true);
+        localStorage.setItem("techsoul_auth", "true");
+        setPasscodeInput("");
+      } else {
+        setPasscodeError("Invalid passcode. Please try again.");
+      }
+    } catch {
+      // Fallback check against settings state if API unreachable
+      if (passcodeInput.trim() === (settings.passcode || "123456")) {
+        setIsAuthenticated(true);
+        localStorage.setItem("techsoul_auth", "true");
+        setPasscodeInput("");
+      } else {
+        setPasscodeError("Invalid passcode. Default is 123456");
+      }
+    } finally {
+      setPasscodeLoading(false);
+    }
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem("techsoul_auth");
+    setIsAuthenticated(false);
+  };
 
   const handleSaveSettings = async () => {
     try {
@@ -118,17 +169,101 @@ export default function Home() {
   };
 
   const SectionToggle = ({ id, title, icon, children }: any) => (
-    <div className="bg-slate-900/60 border border-slate-800 rounded-2xl overflow-hidden">
+    <div className="border border-slate-800 rounded-2xl overflow-hidden bg-slate-900/60 mb-4 transition-all">
       <button
         onClick={() => setExpandedSection(expandedSection === id ? null : id)}
         className="w-full flex items-center justify-between p-5 text-left hover:bg-slate-800/40 transition-colors"
       >
-        <div className="flex items-center gap-3 font-semibold text-slate-100">{icon}{title}</div>
-        {expandedSection === id ? <ChevronUp className="w-4 h-4 text-slate-400" /> : <ChevronDown className="w-4 h-4 text-slate-400" />}
+        <div className="flex items-center gap-3 font-bold text-slate-100 text-sm md:text-base">
+          {icon}
+          {title}
+        </div>
+        {expandedSection === id ? (
+          <ChevronUp className="w-4 h-4 text-slate-400" />
+        ) : (
+          <ChevronDown className="w-4 h-4 text-slate-400" />
+        )}
       </button>
-      {expandedSection === id && <div className="px-5 pb-5">{children}</div>}
+      {expandedSection === id && (
+        <div className="p-5 pt-0 border-t border-slate-800/60">{children}</div>
+      )}
     </div>
   );
+
+  // ─── PASSCODE LOCK SCREEN ───
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center p-4 relative overflow-hidden font-sans">
+        {/* Background glow effects */}
+        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[350px] bg-blue-600/15 blur-[120px] rounded-full pointer-events-none" />
+        <div className="absolute bottom-10 right-10 w-[300px] h-[300px] bg-cyan-500/10 blur-[100px] rounded-full pointer-events-none" />
+
+        <div className="w-full max-w-md bg-slate-900/80 border border-slate-800 rounded-3xl p-8 backdrop-blur-xl shadow-2xl relative z-10">
+          <div className="flex flex-col items-center text-center mb-8">
+            <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-blue-600 to-cyan-500 flex items-center justify-center shadow-lg shadow-blue-500/20 mb-4">
+              <Lock className="w-7 h-7 text-white" />
+            </div>
+            <img src="/techsoul-logo-white.svg" alt="TechSoul" className="h-6 w-auto mb-2 opacity-90" />
+            <h1 className="text-xl font-bold text-slate-100 tracking-tight">TechSoul Audit Suite</h1>
+            <p className="text-xs text-slate-400 mt-1">Enter Security Passcode to Access App</p>
+          </div>
+
+          <form onSubmit={handleVerifyPasscode} className="space-y-5">
+            <div>
+              <label className="block text-xs font-semibold text-slate-400 mb-2 flex items-center justify-between">
+                <span>Passcode</span>
+                <span className="text-[10px] text-slate-500 font-normal">Default: 123456</span>
+              </label>
+              <div className="relative">
+                <input
+                  type={showPasscodeText ? "text" : "password"}
+                  value={passcodeInput}
+                  onChange={(e) => setPasscodeInput(e.target.value)}
+                  placeholder="Enter passcode..."
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-4 pr-10 py-3 text-center text-lg tracking-widest text-slate-100 placeholder-slate-600 focus:outline-none focus:border-blue-500 transition-all font-mono"
+                  autoFocus
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPasscodeText(!showPasscodeText)}
+                  className="absolute right-3 top-3.5 text-slate-500 hover:text-slate-300 transition-colors"
+                >
+                  {showPasscodeText ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+              {passcodeError && (
+                <p className="text-xs text-rose-400 mt-2 text-center font-medium flex items-center justify-center gap-1">
+                  <XCircle className="w-3.5 h-3.5" /> {passcodeError}
+                </p>
+              )}
+            </div>
+
+            <button
+              type="submit"
+              disabled={passcodeLoading}
+              className="w-full bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white font-semibold py-3 rounded-xl shadow-lg shadow-blue-500/25 transition-all text-sm flex items-center justify-center gap-2 disabled:opacity-50"
+            >
+              {passcodeLoading ? (
+                <>
+                  <RefreshCw className="w-4 h-4 animate-spin" /> Verifying...
+                </>
+              ) : (
+                <>
+                  <ShieldCheck className="w-4 h-4" /> Unlock Application
+                </>
+              )}
+            </button>
+          </form>
+
+          <div className="mt-8 pt-6 border-t border-slate-800/80 text-center">
+            <p className="text-[11px] text-slate-500">
+              Confidential Internal Sales Tool · <a href="https://techsoul.in" target="_blank" rel="noreferrer" className="text-blue-400 hover:underline">TechSoul</a>
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 font-sans">
@@ -150,6 +285,13 @@ export default function Home() {
             >
               <Settings className="w-3.5 h-3.5" /> Settings
             </button>
+            <button
+              onClick={handleLogout}
+              title="Lock App"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-slate-800 text-slate-400 hover:text-rose-400 hover:border-rose-500/40 transition-all bg-slate-900/50"
+            >
+              <Lock className="w-3.5 h-3.5" /> Lock
+            </button>
             <a href="https://techsoul.in" target="_blank" rel="noreferrer"
               className="text-xs font-medium text-blue-400 hover:text-blue-300 flex items-center gap-1 bg-blue-500/10 px-3 py-1.5 rounded-full border border-blue-500/20">
               techsoul.in <ExternalLink className="w-3 h-3" />
@@ -163,7 +305,7 @@ export default function Home() {
         <div className="border-b border-slate-800 bg-slate-900/90 backdrop-blur-md">
           <div className="max-w-7xl mx-auto px-6 py-6">
             <h2 className="text-sm font-bold text-slate-300 mb-4 flex items-center gap-2">
-              <Settings className="w-4 h-4 text-blue-400" /> Company Settings
+              <Settings className="w-4 h-4 text-blue-400" /> Company Settings & Security
             </h2>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
               {[
@@ -188,8 +330,9 @@ export default function Home() {
                 </div>
               ))}
             </div>
-            <div className="flex items-center gap-3">
-              <div className="flex-1 max-w-xs">
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
+              <div>
                 <label className="block text-[10px] font-medium text-slate-500 mb-1">Gemini API Key</label>
                 <div className="relative">
                   <input
@@ -204,12 +347,28 @@ export default function Home() {
                   </button>
                 </div>
               </div>
-              <button
-                onClick={handleSaveSettings}
-                className={`mt-4 flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold transition-all ${settingsSaved ? "bg-emerald-600 text-white" : "bg-blue-600 hover:bg-blue-500 text-white"}`}
-              >
-                {settingsSaved ? <><Check className="w-3.5 h-3.5" /> Saved!</> : <><Save className="w-3.5 h-3.5" /> Save Settings</>}
-              </button>
+
+              <div>
+                <label className="block text-[10px] font-medium text-slate-500 mb-1">App Security Passcode</label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={settings.passcode || "123456"}
+                    onChange={(e) => setSettings((s) => ({ ...s, passcode: e.target.value }))}
+                    placeholder="Set passcode (e.g. 123456)"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 placeholder-slate-700 focus:outline-none focus:border-blue-500 font-mono"
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={handleSaveSettings}
+                  className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold transition-all ${settingsSaved ? "bg-emerald-600 text-white" : "bg-blue-600 hover:bg-blue-500 text-white"}`}
+                >
+                  {settingsSaved ? <><Check className="w-3.5 h-3.5" /> Saved!</> : <><Save className="w-3.5 h-3.5" /> Save Settings</>}
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -218,265 +377,225 @@ export default function Home() {
       <main className="max-w-7xl mx-auto px-6 py-8">
         {/* ─── AUDIT FORM ─── */}
         <div className="bg-gradient-to-br from-slate-900 to-slate-900/60 border border-slate-800 rounded-2xl p-6 md:p-8 mb-8 shadow-2xl">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="p-2.5 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-400">
-              <Sparkles className="w-5 h-5" />
-            </div>
-            <div>
-              <h2 className="text-lg font-bold text-slate-100">AI Website Audit Generator</h2>
-              <p className="text-xs text-slate-500">Crawl → Gemini Analysis → Branded PDF Report + Sales Email</p>
-            </div>
+          <div className="flex items-center gap-2 text-xs font-bold text-blue-400 uppercase tracking-widest mb-2">
+            <Sparkles className="w-4 h-4" /> AI Website Revenue Audit Engine
           </div>
+          <h2 className="text-2xl md:text-3xl font-extrabold text-slate-100 mb-2">
+            Generate Audit & Sales Pitch
+          </h2>
+          <p className="text-xs md:text-sm text-slate-400 mb-6">
+            Enter target website URL. Gemini AI will analyze business flaws, quantify losses, and build a modern executive PDF report.
+          </p>
 
-          <form onSubmit={handleAudit}>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-              <div className="lg:col-span-2">
-                <label className="block text-xs font-medium text-slate-400 mb-1.5">Target Website URL *</label>
+          <form onSubmit={handleAudit} className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-semibold text-slate-400 mb-1.5">Target Website URL</label>
                 <div className="relative">
-                  <Globe className="w-4 h-4 absolute left-3 top-2.5 text-slate-500" />
-                  <input type="url" value={url} onChange={(e) => setUrl(e.target.value)}
-                    placeholder="https://example.com" required
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-4 py-2.5 text-sm text-slate-100 placeholder-slate-600 focus:outline-none focus:border-blue-500 transition-colors" />
+                  <Globe className="absolute left-3.5 top-3 w-4 h-4 text-slate-500" />
+                  <input
+                    type="url"
+                    value={url}
+                    onChange={(e) => setUrl(e.target.value)}
+                    placeholder="https://clientwebsite.com"
+                    required
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-sm text-slate-100 placeholder-slate-600 focus:outline-none focus:border-blue-500 transition-colors"
+                  />
                 </div>
               </div>
-
               <div>
-                <label className="block text-xs font-medium text-slate-400 mb-1.5">Client / Company Name</label>
-                <input type="text" value={clientName} onChange={(e) => setClientName(e.target.value)}
-                  placeholder="Company Name"
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-slate-100 placeholder-slate-600 focus:outline-none focus:border-blue-500 transition-colors" />
-              </div>
-
-              <div>
-                <label className="block text-xs font-medium text-slate-400 mb-1.5">Email Tone</label>
-                <select value={tone} onChange={(e) => setTone(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-slate-100 focus:outline-none focus:border-blue-500 transition-colors appearance-none cursor-pointer">
-                  {TONES.map((t) => (
-                    <option key={t.value} value={t.value}>{t.label}</option>
-                  ))}
-                </select>
+                <label className="block text-xs font-semibold text-slate-400 mb-1.5">Client / Business Name</label>
+                <input
+                  type="text"
+                  value={clientName}
+                  onChange={(e) => setClientName(e.target.value)}
+                  placeholder="Complete Consulting California"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-slate-100 placeholder-slate-600 focus:outline-none focus:border-blue-500 transition-colors"
+                />
               </div>
             </div>
 
-            <div className="flex items-center justify-between">
-              <div className="flex gap-2">
+            <div>
+              <label className="block text-xs font-semibold text-slate-400 mb-1.5">Sales Outreach Tone</label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2">
                 {TONES.map((t) => (
-                  <button key={t.value} type="button" onClick={() => setTone(t.value)}
-                    className={`text-[10px] px-2.5 py-1 rounded-full border transition-all ${tone === t.value ? "bg-blue-600 border-blue-500 text-white" : "border-slate-700 text-slate-500 hover:border-slate-600 hover:text-slate-400"}`}>
-                    {t.label}
+                  <button
+                    key={t.value}
+                    type="button"
+                    onClick={() => setTone(t.value)}
+                    className={`p-3 rounded-xl border text-left transition-all ${tone === t.value ? "bg-blue-600/15 border-blue-500 text-blue-300" : "bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-700"}`}
+                  >
+                    <div className="font-bold text-xs">{t.label}</div>
+                    <div className="text-[10px] opacity-75 mt-0.5">{t.desc}</div>
                   </button>
                 ))}
               </div>
-
-              <button type="submit" disabled={loading}
-                className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-semibold px-7 py-2.5 rounded-xl shadow-lg shadow-blue-500/25 flex items-center gap-2 disabled:opacity-60 transition-all text-sm cursor-pointer">
-                {loading ? (
-                  <><RefreshCw className="w-4 h-4 animate-spin" /> Crawling & Analyzing...</>
-                ) : (
-                  <><FileText className="w-4 h-4" /> Generate Audit Report</>
-                )}
-              </button>
             </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-blue-500/20 transition-all flex items-center justify-center gap-2 text-sm disabled:opacity-50"
+            >
+              {loading ? (
+                <>
+                  <RefreshCw className="w-4 h-4 animate-spin" /> Analyzing Website & Generating Report...
+                </>
+              ) : (
+                <>
+                  <Zap className="w-4 h-4" /> Run Audit & Build PDF Report
+                </>
+              )}
+            </button>
           </form>
 
-          {loading && (
-            <div className="mt-4 p-4 rounded-xl bg-blue-500/5 border border-blue-500/20">
-              <div className="flex items-center gap-3">
-                <div className="w-2 h-2 rounded-full bg-blue-400 animate-pulse" />
-                <div className="w-2 h-2 rounded-full bg-blue-400 animate-pulse delay-100" />
-                <div className="w-2 h-2 rounded-full bg-blue-400 animate-pulse delay-200" />
-                <span className="text-xs text-blue-400">Crawling website → Sending to Gemini AI → Building PDF report...</span>
-              </div>
-            </div>
-          )}
-
           {error && (
-            <div className="mt-4 p-4 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-sm flex items-start gap-3">
-              <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
-              <div>{error}</div>
+            <div className="mt-4 p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+              <span>{error}</span>
             </div>
           )}
         </div>
 
-        {/* ─── RESULTS ─── */}
-        {auditData && (
+        {/* ─── AUDIT RESULTS ─── */}
+        {report && (
           <div className="space-y-6">
-            {/* Top Download + Score Bar */}
-            <div className="bg-gradient-to-r from-slate-900 via-blue-950/50 to-slate-900 border border-blue-500/30 rounded-2xl p-6 flex flex-col md:flex-row items-center justify-between gap-4 shadow-xl">
-              <div className="flex items-center gap-5">
-                <ScoreBadge score={auditData.overall_score || "D"} />
+            {/* Top Bar Actions */}
+            <div className="flex items-center justify-between bg-slate-900 border border-slate-800 rounded-2xl p-4">
+              <div className="flex items-center gap-3">
+                <ScoreBadge score={auditData?.overall_score} />
                 <div>
-                  <div className="text-xs font-bold text-blue-400 uppercase tracking-wider mb-1">Audit Complete</div>
-                  <h3 className="text-2xl font-bold text-white">{auditData.client_name}</h3>
-                  <p className="text-sm text-slate-400 mt-0.5">{auditData.client_url}</p>
+                  <div className="text-xs text-slate-400">Verdict</div>
+                  <div className="font-bold text-slate-100 text-base">{auditData?.verdict}</div>
                 </div>
               </div>
 
-              <div className="flex items-center gap-3">
-                {/* Tab Toggle */}
-                <div className="flex bg-slate-900 border border-slate-800 rounded-xl p-1 gap-1">
-                  {[
-                    { key: "audit", label: "Audit", icon: <BarChart3 className="w-3.5 h-3.5" /> },
-                    { key: "email", label: "Email", icon: <Mail className="w-3.5 h-3.5" /> },
-                  ].map((tab) => (
-                    <button key={tab.key} onClick={() => setActiveTab(tab.key as any)}
-                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${activeTab === tab.key ? "bg-blue-600 text-white" : "text-slate-400 hover:text-slate-200"}`}>
-                      {tab.icon}{tab.label}
-                    </button>
-                  ))}
-                </div>
-
-                <a href={`${API}${report.download_url}`} target="_blank" rel="noreferrer"
-                  className="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold px-5 py-2.5 rounded-xl shadow-lg shadow-emerald-600/30 flex items-center gap-2 transition-all text-sm">
-                  <Download className="w-4 h-4" /> Download PDF
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setActiveTab("audit")}
+                  className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${activeTab === "audit" ? "bg-blue-600 text-white" : "bg-slate-800 text-slate-300 hover:bg-slate-700"}`}
+                >
+                  <FileText className="w-3.5 h-3.5 inline mr-1" /> Audit Report
+                </button>
+                <button
+                  onClick={() => setActiveTab("email")}
+                  className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${activeTab === "email" ? "bg-blue-600 text-white" : "bg-slate-800 text-slate-300 hover:bg-slate-700"}`}
+                >
+                  <Mail className="w-3.5 h-3.5 inline mr-1" /> Outreach Email
+                </button>
+                <a
+                  href={`${API}${report.pdf_url}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-lg shadow-emerald-500/20"
+                >
+                  <Download className="w-3.5 h-3.5" /> Download PDF
                 </a>
               </div>
             </div>
 
-            {/* ── AUDIT TAB ── */}
+            {/* ── AUDIT REPORT TAB ── */}
             {activeTab === "audit" && (
               <div className="space-y-4">
-                {/* Stats Row */}
-                <div className="grid grid-cols-3 gap-4">
-                  {[
-                    { label: "Pages Audited", val: auditData.stats?.pages_reviewed || 5, color: "text-blue-400", icon: <Search className="w-4 h-4" /> },
-                    { label: "Issues Found", val: auditData.stats?.checklist_failed || 12, color: "text-amber-400", icon: <AlertTriangle className="w-4 h-4" /> },
-                    { label: "Critical Bugs", val: auditData.stats?.broken_elements || 6, color: "text-rose-400", icon: <ShieldAlert className="w-4 h-4" /> },
-                  ].map((s) => (
-                    <div key={s.label} className="bg-slate-900/60 border border-slate-800 rounded-2xl p-5 text-center">
-                      <div className={`flex justify-center mb-2 ${s.color}`}>{s.icon}</div>
-                      <div className={`text-4xl font-black ${s.color}`}>{s.val}</div>
-                      <div className="text-xs text-slate-500 mt-1">{s.label}</div>
+                {/* Executive Summary */}
+                <SectionToggle id="summary" title="Executive Summary & Verdict" icon={<ShieldAlert className="w-5 h-5 text-rose-400" />}>
+                  <p className="text-sm text-slate-300 leading-relaxed mb-4">{auditData?.verdict_summary}</p>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <div className="p-3 bg-slate-950 rounded-xl border border-slate-800">
+                      <div className="text-[10px] text-slate-500 uppercase font-bold">Pages Audited</div>
+                      <div className="text-xl font-black text-blue-400">{auditData?.stats?.pages_reviewed}</div>
                     </div>
-                  ))}
-                </div>
-
-                {/* Verdict */}
-                <div className="bg-rose-950/20 border border-rose-500/30 rounded-2xl p-5">
-                  <div className="flex items-start gap-4">
-                    <div className="shrink-0 px-3 py-1.5 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-400 font-black text-sm">
-                      {auditData.verdict}
+                    <div className="p-3 bg-slate-950 rounded-xl border border-slate-800">
+                      <div className="text-[10px] text-slate-500 uppercase font-bold">Issues Found</div>
+                      <div className="text-xl font-black text-amber-400">{auditData?.stats?.checklist_failed}</div>
                     </div>
-                    <p className="text-slate-300 text-sm leading-relaxed">{auditData.verdict_summary}</p>
+                    <div className="p-3 bg-slate-950 rounded-xl border border-slate-800">
+                      <div className="text-[10px] text-slate-500 uppercase font-bold">Critical Bugs</div>
+                      <div className="text-xl font-black text-rose-400">{auditData?.stats?.broken_elements}</div>
+                    </div>
                   </div>
-                </div>
+                </SectionToggle>
 
                 {/* Business Losses */}
-                <SectionToggle id="losses" title="What This Website Is Costing You Right Now" icon={<DollarSign className="w-5 h-5 text-rose-400" />}>
-                  <div className="space-y-2 mt-1">
-                    {(auditData.business_losses || []).map((loss: string, i: number) => (
-                      <div key={i} className="flex items-start gap-3 p-3 rounded-xl bg-rose-950/20 border border-rose-500/10">
-                        <span className="text-rose-400 font-bold shrink-0 mt-0.5">⚠</span>
-                        <span className="text-sm text-slate-200">{loss}</span>
+                <SectionToggle id="losses" title="Plain English Business Losses" icon={<TrendingDown className="w-5 h-5 text-amber-400" />}>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {auditData?.business_losses?.map((loss: string, idx: number) => (
+                      <div key={idx} className="p-4 bg-slate-950 border border-slate-800/80 rounded-xl flex items-start gap-3">
+                        <span className="flex-shrink-0 w-6 h-6 rounded-full bg-rose-500/10 text-rose-400 border border-rose-500/20 flex items-center justify-center text-xs font-bold">
+                          {idx + 1}
+                        </span>
+                        <p className="text-xs text-slate-300 leading-relaxed">{loss}</p>
                       </div>
                     ))}
-                  </div>
-                </SectionToggle>
-
-                {/* Good, Bad, Ugly */}
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                  {[
-                    { key: "the_good", label: "The Good", subtitle: "What to Keep", color: "emerald", icon: <CheckCircle2 className="w-4 h-4" />, items: auditData.the_good },
-                    { key: "the_bad", label: "The Bad", subtitle: "Missing Fundamentals", color: "amber", icon: <AlertTriangle className="w-4 h-4" />, items: auditData.the_bad },
-                    { key: "the_ugly", label: "The Ugly", subtitle: "Bugs & Broken Elements", color: "rose", icon: <XCircle className="w-4 h-4" />, items: auditData.the_ugly },
-                  ].map((section) => (
-                    <div key={section.key} className="bg-slate-900/60 border border-slate-800 rounded-2xl p-5">
-                      <div className={`flex items-center gap-2 text-${section.color}-400 font-bold mb-3 text-sm`}>
-                        {section.icon} {section.label}
-                        <span className={`text-[10px] text-${section.color}-500 font-normal`}>— {section.subtitle}</span>
-                      </div>
-                      <div className="space-y-3">
-                        {(section.items || []).map((item: any, idx: number) => (
-                          <div key={idx} className="bg-slate-950/60 rounded-xl p-3 border border-slate-800/80">
-                            <div className={`text-[10px] font-semibold text-${section.color}-400 mb-1`}>{item.where}</div>
-                            <div className="text-xs font-medium text-slate-200">{item.what_found}</div>
-                            <div className="text-[10px] text-slate-500 mt-1">{item.why_matters}</div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Revamp Checklist */}
-                <SectionToggle id="checklist" title="Current Site vs. After Revamp Checklist" icon={<Layers className="w-5 h-5 text-blue-400" />}>
-                  <div className="divide-y divide-slate-800/60">
-                    {(auditData.revamp_checklist || []).map((item: any, idx: number) => (
-                      <div key={idx} className="py-2.5 flex items-center justify-between gap-4">
-                        <div>
-                          <span className="text-[10px] font-bold text-blue-400 mr-2">[{item.category}]</span>
-                          <span className="text-xs text-slate-300">{item.item}</span>
-                        </div>
-                        <div className="flex items-center gap-4 text-[10px] font-bold shrink-0">
-                          <span className={item.current ? "text-emerald-400" : "text-rose-400"}>{item.current ? "✓ Pass" : "✗ Fail"}</span>
-                          <span className="text-slate-600">→</span>
-                          <span className="text-emerald-400">✓ Optimized</span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </SectionToggle>
-
-                {/* Page Matrix */}
-                <SectionToggle id="matrix" title="Page-by-Page Audit Matrix" icon={<Target className="w-5 h-5 text-violet-400" />}>
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-xs">
-                      <thead>
-                        <tr className="border-b border-slate-800">
-                          {["Page", "Mobile UX", "Clear CTA", "Contact Form", "Trust Signals", "SEO"].map((h) => (
-                            <th key={h} className="text-left py-2 pr-4 text-slate-500 font-medium">{h}</th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {(auditData.issue_matrix || []).map((row: any, idx: number) => {
-                          const cell = (v: string) => {
-                            const lower = v?.toLowerCase();
-                            if (lower === "pass") return <span className="text-emerald-400 font-bold">✓ Pass</span>;
-                            if (lower === "partial") return <span className="text-amber-400 font-bold">~ Partial</span>;
-                            return <span className="text-rose-400 font-bold">✗ Fail</span>;
-                          };
-                          return (
-                            <tr key={idx} className="border-b border-slate-800/50">
-                              <td className="py-2 pr-4 font-medium text-slate-200">{row.page}</td>
-                              <td className="py-2 pr-4">{cell(row.mobile_ux)}</td>
-                              <td className="py-2 pr-4">{cell(row.cta_clarity)}</td>
-                              <td className="py-2 pr-4">{cell(row.forms)}</td>
-                              <td className="py-2 pr-4">{cell(row.trust)}</td>
-                              <td className="py-2 pr-4">{cell(row.seo)}</td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
                   </div>
                 </SectionToggle>
 
                 {/* Cost of Waiting */}
-                <SectionToggle id="cost" title="The Cost of Inaction — Risks Growing Every Day" icon={<TrendingDown className="w-5 h-5 text-orange-400" />}>
-                  <div className="space-y-3 mt-1">
-                    {(auditData.cost_of_waiting || []).map((item: any, idx: number) => {
-                      const impactColor = item.impact === "High" ? "rose" : item.impact === "Medium" ? "amber" : "emerald";
-                      return (
-                        <div key={idx} className="flex gap-3 p-3 rounded-xl bg-slate-950/60 border border-slate-800">
-                          <div className={`shrink-0 mt-0.5 px-2 py-0.5 rounded text-[10px] font-bold text-${impactColor}-400 bg-${impactColor}-500/10 border border-${impactColor}-500/20 h-fit`}>
-                            {item.impact?.toUpperCase()}
-                          </div>
-                          <div>
-                            <div className="text-sm font-semibold text-slate-200 mb-1">{item.title}</div>
-                            <div className="text-xs text-slate-400 leading-relaxed">{item.description}</div>
-                          </div>
+                <SectionToggle id="cost" title="Cost of Waiting (Financial Impact)" icon={<DollarSign className="w-5 h-5 text-emerald-400" />}>
+                  <div className="space-y-3">
+                    {auditData?.cost_of_waiting?.map((item: any, idx: number) => (
+                      <div key={idx} className="p-4 bg-slate-950 border border-slate-800 rounded-xl flex flex-col md:flex-row md:items-center justify-between gap-3">
+                        <div>
+                          <div className="font-bold text-slate-200 text-sm">{item.title}</div>
+                          <div className="text-xs text-slate-400 mt-0.5">{item.description}</div>
                         </div>
-                      );
-                    })}
+                        <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase border self-start md:self-auto ${item.impact?.toLowerCase() === "high" ? "bg-rose-500/10 text-rose-400 border-rose-500/20" : "bg-amber-500/10 text-amber-400 border-amber-500/20"}`}>
+                          {item.impact} Impact
+                        </span>
+                      </div>
+                    ))}
                   </div>
                 </SectionToggle>
 
-                {/* Roadmap */}
-                <SectionToggle id="roadmap" title="Recommended 3-Phase Revamp Roadmap" icon={<Zap className="w-5 h-5 text-blue-400" />}>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-1">
-                    {(auditData.recommended_scope || []).map((phase: any, idx: number) => (
-                      <div key={idx} className="bg-slate-950/60 rounded-xl p-4 border border-slate-800 relative">
+                {/* Good / Bad / Ugly */}
+                <SectionToggle id="gbu" title="Findings Breakdown (Good, Bad & Ugly)" icon={<Layers className="w-5 h-5 text-blue-400" />}>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="p-4 bg-emerald-950/20 border border-emerald-800/40 rounded-xl">
+                      <h4 className="font-bold text-emerald-400 text-sm mb-3 flex items-center gap-1.5"><CheckCircle2 className="w-4 h-4" /> What's Working</h4>
+                      <div className="space-y-2.5">
+                        {auditData?.the_good?.map((g: any, i: number) => (
+                          <div key={i} className="text-xs bg-slate-950/60 p-3 rounded-lg border border-slate-800">
+                            <div className="text-[10px] font-bold text-emerald-400 uppercase mb-0.5">{g.where}</div>
+                            <div className="font-semibold text-slate-200">{g.what_found}</div>
+                            <div className="text-[11px] text-slate-400 mt-1">{g.why_matters}</div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="p-4 bg-amber-950/20 border border-amber-800/40 rounded-xl">
+                      <h4 className="font-bold text-amber-400 text-sm mb-3 flex items-center gap-1.5"><AlertTriangle className="w-4 h-4" /> What's Missing</h4>
+                      <div className="space-y-2.5">
+                        {auditData?.the_bad?.map((b: any, i: number) => (
+                          <div key={i} className="text-xs bg-slate-950/60 p-3 rounded-lg border border-slate-800">
+                            <div className="text-[10px] font-bold text-amber-400 uppercase mb-0.5">{b.where}</div>
+                            <div className="font-semibold text-slate-200">{b.what_found}</div>
+                            <div className="text-[11px] text-slate-400 mt-1">{b.why_matters}</div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="p-4 bg-rose-950/20 border border-rose-800/40 rounded-xl">
+                      <h4 className="font-bold text-rose-400 text-sm mb-3 flex items-center gap-1.5"><XCircle className="w-4 h-4" /> What's Broken</h4>
+                      <div className="space-y-2.5">
+                        {auditData?.the_ugly?.map((u: any, i: number) => (
+                          <div key={i} className="text-xs bg-slate-950/60 p-3 rounded-lg border border-slate-800">
+                            <div className="text-[10px] font-bold text-rose-400 uppercase mb-0.5">{u.where}</div>
+                            <div className="font-semibold text-slate-200">{u.what_found}</div>
+                            <div className="text-[11px] text-slate-400 mt-1">{u.why_matters}</div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </SectionToggle>
+
+                {/* Revamp Scope */}
+                <SectionToggle id="scope" title="Recommended Revamp Roadmap" icon={<Target className="w-5 h-5 text-purple-400" />}>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {auditData?.recommended_scope?.map((phase: any, idx: number) => (
+                      <div key={idx} className="p-5 bg-slate-950 border border-slate-800 rounded-xl relative">
                         <div className="absolute top-3 right-3 w-7 h-7 rounded-full bg-blue-600/20 border border-blue-500/30 flex items-center justify-center text-xs font-black text-blue-400">{idx + 1}</div>
                         <div className="text-[10px] font-bold text-blue-400 uppercase tracking-wider mb-1">{phase.timeline}</div>
                         <div className="text-sm font-bold text-slate-100 mb-2">{phase.phase}</div>
