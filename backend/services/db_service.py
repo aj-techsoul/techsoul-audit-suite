@@ -17,14 +17,21 @@ def init_db():
             phone TEXT DEFAULT '+919862542983',
             designation TEXT DEFAULT 'Founder / Lead Consultant',
             linkedin TEXT DEFAULT 'https://linkedin.com/company/techsoul',
-            gemini_api_key TEXT DEFAULT 'AQ.Ab8RN6I3lAIvFjD8lhbh6iGCryMlrf9iN7eqxxMxIXUGuqchfQ'
+            gemini_api_key TEXT DEFAULT 'AQ.Ab8RN6I3lAIvFjD8lhbh6iGCryMlrf9iN7eqxxMxIXUGuqchfQ',
+            passcode TEXT DEFAULT '123456'
         )
     """)
+    # Migration: add passcode column if missing in existing table
+    cursor.execute("PRAGMA table_info(company_settings)")
+    cols = [column[1] for column in cursor.fetchall()]
+    if 'passcode' not in cols:
+        cursor.execute("ALTER TABLE company_settings ADD COLUMN passcode TEXT DEFAULT '123456'")
+
     cursor.execute("SELECT COUNT(*) FROM company_settings")
     if cursor.fetchone()[0] == 0:
         cursor.execute("""
             INSERT INTO company_settings (
-                user_name, company_name, website_url, email, phone, designation, linkedin, gemini_api_key
+                user_name, company_name, website_url, email, phone, designation, linkedin, gemini_api_key, passcode
             ) VALUES (
                 'AJ',
                 'TECHSOUL (GrowEagles TechSoul Pvt. Ltd.)',
@@ -33,7 +40,8 @@ def init_db():
                 '+919862542983',
                 'Founder / Lead Consultant',
                 'https://linkedin.com/company/techsoul',
-                'AQ.Ab8RN6I3lAIvFjD8lhbh6iGCryMlrf9iN7eqxxMxIXUGuqchfQ'
+                'AQ.Ab8RN6I3lAIvFjD8lhbh6iGCryMlrf9iN7eqxxMxIXUGuqchfQ',
+                '123456'
             )
         """)
     conn.commit()
@@ -64,7 +72,8 @@ def update_settings(settings_data: Dict[str, Any]) -> Dict[str, Any]:
             phone = ?,
             designation = ?,
             linkedin = ?,
-            gemini_api_key = ?
+            gemini_api_key = ?,
+            passcode = ?
         WHERE id = 1
     """, (
         settings_data.get("user_name", "AJ"),
@@ -74,7 +83,8 @@ def update_settings(settings_data: Dict[str, Any]) -> Dict[str, Any]:
         settings_data.get("phone", "+919862542983"),
         settings_data.get("designation", "Founder / Lead Consultant"),
         settings_data.get("linkedin", "https://linkedin.com/company/techsoul"),
-        settings_data.get("gemini_api_key", "AQ.Ab8RN6I3lAIvFjD8lhbh6iGCryMlrf9iN7eqxxMxIXUGuqchfQ")
+        settings_data.get("gemini_api_key", "AQ.Ab8RN6I3lAIvFjD8lhbh6iGCryMlrf9iN7eqxxMxIXUGuqchfQ"),
+        settings_data.get("passcode", "123456")
     ))
     conn.commit()
     conn.close()

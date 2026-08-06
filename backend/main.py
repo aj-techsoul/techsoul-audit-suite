@@ -60,6 +60,10 @@ class CompanySettingsModel(BaseModel):
     designation: Optional[str] = "Founder / Lead Consultant"
     linkedin: Optional[str] = "https://linkedin.com/company/techsoul"
     gemini_api_key: Optional[str] = "AQ.Ab8RN6I3lAIvFjD8lhbh6iGCryMlrf9iN7eqxxMxIXUGuqchfQ"
+    passcode: Optional[str] = "123456"
+
+class PasscodeVerificationRequest(BaseModel):
+    passcode: str
 
 @app.get("/api/settings")
 def get_company_settings():
@@ -68,6 +72,15 @@ def get_company_settings():
 @app.post("/api/settings")
 def update_company_settings(settings: CompanySettingsModel):
     return update_settings(settings.dict())
+
+@app.post("/api/verify-passcode")
+def verify_passcode(req: PasscodeVerificationRequest):
+    settings = get_settings()
+    stored_code = str(settings.get("passcode", "123456")).strip()
+    user_code = str(req.passcode).strip()
+    if not stored_code or stored_code == user_code:
+        return {"success": True, "message": "Access granted"}
+    return {"success": False, "message": "Invalid passcode"}
 
 @app.get("/")
 def read_root():
