@@ -83,7 +83,7 @@ def update_settings(settings_data: Dict[str, Any]) -> Dict[str, Any]:
         settings_data.get("phone", "+919862542983"),
         settings_data.get("designation", "Founder / Lead Consultant"),
         settings_data.get("linkedin", "https://linkedin.com/company/techsoul"),
-        settings_data.get("gemini_api_key", "AQ.Ab8RN6I3lAIvFjD8lhbh6iGCryMlrf9iN7eqxxMxIXUGuqchfQ"),
+        settings_data.get("gemini_api_key", "AIzaSyDQpTdBtRWq4fADA__3evxddax67M1LtyQ"),
         settings_data.get("passcode", "123456")
     ))
     conn.commit()
