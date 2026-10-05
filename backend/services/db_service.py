@@ -17,7 +17,7 @@ def init_db():
             phone TEXT DEFAULT '+919862542983',
             designation TEXT DEFAULT 'Founder / Lead Consultant',
             linkedin TEXT DEFAULT 'https://linkedin.com/company/techsoul',
-            gemini_api_key TEXT DEFAULT 'AQ.Ab8RN6I3lAIvFjD8lhbh6iGCryMlrf9iN7eqxxMxIXUGuqchfQ',
+            gemini_api_key TEXT DEFAULT 'AIzaSyByB2qeTmcwxdOx293wW14Ja40Jg7oyukU',
             passcode TEXT DEFAULT '123456'
         )
     """)
@@ -40,7 +40,7 @@ def init_db():
                 '+919862542983',
                 'Founder / Lead Consultant',
                 'https://linkedin.com/company/techsoul',
-                'AQ.Ab8RN6I3lAIvFjD8lhbh6iGCryMlrf9iN7eqxxMxIXUGuqchfQ',
+                'AIzaSyByB2qeTmcwxdOx293wW14Ja40Jg7oyukU',
                 '123456'
             )
         """)

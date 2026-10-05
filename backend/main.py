@@ -62,7 +62,7 @@ class CompanySettingsModel(BaseModel):
     phone: Optional[str] = "+919862542983"
     designation: Optional[str] = "Founder / Lead Consultant"
     linkedin: Optional[str] = "https://linkedin.com/company/techsoul"
-    gemini_api_key: Optional[str] = "AQ.Ab8RN6I3lAIvFjD8lhbh6iGCryMlrf9iN7eqxxMxIXUGuqchfQ"
+    gemini_api_key: Optional[str] = "AIzaSyByB2qeTmcwxdOx293wW14Ja40Jg7oyukU"
     passcode: Optional[str] = "123456"
 
 class PasscodeVerificationRequest(BaseModel):

@@ -4,7 +4,7 @@ from google import genai
 from google.genai import types
 from typing import Dict, Any
 
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "AQ.Ab8RN6I3lAIvFjD8lhbh6iGCryMlrf9iN7eqxxMxIXUGuqchfQ")
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "AIzaSyByB2qeTmcwxdOx293wW14Ja40Jg7oyukU")
 
 # ─────────────────────────────────────────────────────────────
 #  SYSTEM INSTRUCTION  –  Gemini's core persona & output rules
@@ -211,7 +211,7 @@ YOUR TASK:
 """
 
     # Try latest available Gemini models with automatic fallback
-    models_to_try = ['gemini-3.6-flash', 'gemini-3.5-flash', 'gemini-flash-latest']
+    models_to_try = ['gemini-2.5-flash', 'gemini-3.6-flash', 'gemini-flash-latest']
     response = None
     last_err = None
 
