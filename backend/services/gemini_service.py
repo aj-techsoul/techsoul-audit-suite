@@ -211,7 +211,13 @@ YOUR TASK:
 """
 
     # Try latest available Gemini models with automatic fallback
-    models_to_try = ['gemini-3.8-flash', 'gemini-3.6-flash']
+    models_to_try = [
+        'gemini-flash-lite-latest',
+        'gemini-3.5-flash-lite',
+        'gemini-3.1-flash-lite',
+        'gemini-3-flash-preview',
+        'gemini-3.8-flash'
+    ]
     response = None
     last_err = None
 
