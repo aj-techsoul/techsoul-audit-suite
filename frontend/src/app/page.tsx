@@ -11,7 +11,7 @@ import {
   Lock, Unlock, KeyRound, ShieldCheck
 } from "lucide-react";
 
-const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const API = process.env.NEXT_PUBLIC_API_URL || "https://techsoul-audit-backend.onrender.com";
 
 const TONES = [
   { value: "Aggressive & Urgent", label: "🔥 Aggressive & Urgent", desc: "High-pressure, compelling action" },
