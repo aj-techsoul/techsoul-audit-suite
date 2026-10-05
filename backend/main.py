@@ -103,7 +103,10 @@ async def create_audit(req: AuditRequest):
         
         # Step 2: Gemini Prompt
         prompt = req.custom_prompt if req.custom_prompt else DEFAULT_PROMPT
-        api_key = req.api_key if req.api_key else db_settings.get("gemini_api_key")
+        api_key = req.api_key if req.api_key and req.api_key.startswith("AIzaSy") else (db_settings.get("gemini_api_key") if db_settings.get("gemini_api_key", "").startswith("AIzaSy") else None)
+        if not api_key:
+            from services.gemini_service import GEMINI_API_KEY
+            api_key = GEMINI_API_KEY
         
         audit_json = generate_audit_report(
             url=req.url,
